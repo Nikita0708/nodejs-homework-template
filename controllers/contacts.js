@@ -54,7 +54,6 @@ const update = async (req, res, next) => {
 const updateStatus = async (req, res, next) => {
   const { contactId } = req.params;
   const { favorite } = req.data;
-  console.log("favorite", favorite);
 
   const result = await Contact.findByIdAndUpdate(
     contactId,
