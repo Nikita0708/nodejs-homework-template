@@ -1,10 +1,5 @@
-const {
-  listContacts,
-  getContactById,
-  addContact,
-  updateContact,
-  removeContact,
-} = require("../models/contacts.js");
+const { Contact } = require("../models/contactMongoValidation.js");
+const { listContacts, getContactById } = require("../models/contacts.js");
 
 const getAll = async (req, res, next) => {
   try {
@@ -30,42 +25,44 @@ const getById = async (req, res, next) => {
   }
 };
 
-const add = async (req, res, next) => {
-  try {
-    const result = await addContact(req.body);
+// const add = async (req, res, next) => {
+//   try {
+//     const result = await addContact(req.body);
 
-    if (!result) {
-      res.status(400).json({
-        message: "contact with this phone number is exists",
-      });
-    }
+//     if (!result) {
+//       res.status(400).json({
+//         message: "contact with this phone number is exists",
+//       });
+//     }
 
-    res.status(201).json(result);
-  } catch (error) {
-    next(error);
-  }
-};
+//     res.status(201).json(result);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
-const remove = async (req, res, next) => {
-  try {
-    const { contactId } = req.params;
-    const result = await removeContact(contactId);
+// const remove = async (req, res, next) => {
+//   try {
+//     const { contactId } = req.params;
+//     const result = await removeContact(contactId);
 
-    if (!result) {
-      next();
-      return;
-    }
+//     if (!result) {
+//       next();
+//       return;
+//     }
 
-    res.status(200).json({ message: "contact deleted" });
-  } catch (error) {
-    next(error);
-  }
-};
+//     res.status(200).json({ message: "contact deleted" });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 const update = async (req, res, next) => {
   try {
     const { contactId } = req.params;
-    const result = await updateContact(contactId, req.body);
+    const result = await Contact.findByIdAndUpdate(contactId, req.body, {
+      new: true,
+    });
 
     if (!result) {
       next();
@@ -81,7 +78,7 @@ const update = async (req, res, next) => {
 module.exports = {
   getAll,
   getById,
-  add,
-  remove,
+  // add,
+  // remove,
   update,
 };
