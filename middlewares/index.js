@@ -1,9 +1,11 @@
-const validateContact = require("./validateContact");
-const validateId = require("./validateId");
-const validateAuth = require("./validateAuth");
+const validateJoi = require('./validateJoi');
+const validateId = require('./validateId');
+const authMiddleware = require('./authMiddleware');
+const validateUniqueName = require('./validateUniqueName');
 
 module.exports = {
-    validateContact,
+    validateJoi,
     validateId,
-    validateAuth,
+    authMiddleware,
+    validateUniqueName,
 };
