@@ -1,79 +1,142 @@
-const { HttpError, ctrlWrapper } = require("../helpers");
-const { Contact } = require("../models");
+const { HttpError, ctrlWrapper } = require('../helpers');
+const { Contact } = require('../schemas');
 
 const getAll = async (req, res, next) => {
-  const result = await Contact.find();
-  res.status(200).json(result);
+    const { favorite, page, limit } = req.query;
+    const { _id } = req.user;
+    const all = await await Contact.find({ owner: _id });
+
+    if (Boolean(favorite) && Boolean(page) && Boolean(limit)) {
+        const skip = (page - 1) * limit;
+        const filtered = await Contact.find({ owner: _id, favorite });
+        const result = await Contact.find(
+            { owner: _id, favorite },
+            {},
+            { skip, limit }
+        );
+        res.status(200).json({
+            result: {
+                contacts: result,
+                hints: result.length,
+                totalHints: filtered.length,
+            },
+        });
+        return;
+    }
+
+    if (!favorite && Boolean(page) && Boolean(limit)) {
+        const skip = (page - 1) * limit;
+        const result = await Contact.find({ owner: _id }, {}, { skip, limit });
+        res.status(200).json({
+            result: {
+                contacts: result,
+                hints: result.length,
+                totalHints: all.length,
+            },
+        });
+        return;
+    }
+
+    if (Boolean(favorite) && !page && !limit) {
+        const result = await Contact.find({ owner: _id, favorite });
+        res.status(200).json({
+            result: {
+                contacts: result,
+                totalHints: result.length,
+            },
+        });
+        return;
+    }
+
+    res.status(200).json({
+        result: { contacts: all, totalHints: all.length },
+    });
 };
 
 const getById = async (req, res, next) => {
-  const { contactId } = req.params;
+    const { contactId } = req.params;
+    const { _id } = req.user;
 
-  const result = await Contact.findById(contactId);
+    const result = await Contact.findOne({ _id: contactId, owner: _id });
 
-  if (!result) {
-    next(HttpError(404));
-    return;
-  }
-  res.status(200).json(result);
+    if (!result) {
+        next(HttpError(404));
+        return;
+    }
+
+    res.status(200).json(result);
 };
 
 const add = async (req, res, next) => {
-  const result = await Contact.create(req.data);
+    const { _id: owner } = req.user;
+    const isExist = await Contact.findOne({ name: req.body.name, owner });
 
-  res.status(201).json(result);
+    if (isExist) {
+        next(HttpError(400, `Contact with name ${req.body.name} is exists`));
+        return;
+    }
+
+    const result = await Contact.create({ ...req.data, owner });
+
+    res.status(201).json(result);
 };
 
 const remove = async (req, res, next) => {
-  const { contactId } = req.params;
+    const { contactId } = req.params;
+    const { _id: owner } = req.user;
+    const result = await Contact.findOneAndDelete({ _id: contactId, owner });
 
-  const result = await Contact.findByIdAndDelete(contactId);
-  if (!result) {
-    next(HttpError(404));
-    return;
-  }
+    if (!result) {
+        next(HttpError(404));
+        return;
+    }
 
-  res.status(200).json({ message: "contact deleted" });
+    res.status(200).json({ message: 'contact deleted' });
 };
 
 const update = async (req, res, next) => {
-  const { contactId } = req.params;
+    const { contactId } = req.params;
+    const { _id: owner } = req.user;
+    const result = await Contact.findOneAndUpdate(
+        { _id: contactId, owner },
+        req.data,
+        {
+            returnDocument: 'after',
+        }
+    );
 
-  const result = await Contact.findByIdAndUpdate(contactId, req.data, {
-    returnDocument: "after",
-  });
+    if (!result) {
+        next(HttpError(404));
+        return;
+    }
 
-  if (!result) {
-    next(HttpError(404));
-    return;
-  }
-
-  res.status(200).json(result);
+    res.status(200).json(result);
 };
 
 const updateStatus = async (req, res, next) => {
-  const { contactId } = req.params;
-  const { favorite } = req.data;
+    const { contactId } = req.params;
+    const { favorite } = req.data;
 
-  const result = await Contact.findByIdAndUpdate(
-    contactId,
-    { favorite },
-    { returnDocument: "after" }
-  );
+    const { _id: owner } = req.user;
+    const result = await Contact.findOneAndUpdate(
+        { _id: contactId, owner },
+        { favorite },
+        { returnDocument: 'after' }
+    );
 
-  if (!result) {
-    next(HttpError(404));
-    return;
-  }
+    if (!result) {
+        next(HttpError(404));
+        return;
+    }
 
-  res.status(200).json(result);
+    res.status(200).json(result);
 };
 
 module.exports = {
-  getAll: ctrlWrapper(getAll),
-  getById: ctrlWrapper(getById),
-  add: ctrlWrapper(add),
-  remove: ctrlWrapper(remove),
-  update: ctrlWrapper(update),
-  updateStatus: ctrlWrapper(updateStatus),
+    getAll: ctrlWrapper(getAll),
+    getById: ctrlWrapper(getById),
+    add: ctrlWrapper(add),
+    remove: ctrlWrapper(remove),
+    update: ctrlWrapper(update),
+    updateStatus: ctrlWrapper(updateStatus),
 };
